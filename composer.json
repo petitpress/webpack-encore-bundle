@@ -10,15 +10,15 @@
 		}
 	],
 	"require": {
-		"php": "^7.2",
-		"nette/di": "^3.0.3",
+		"php": "^7.2 || ^8.0",
+		"nette/di": "^3.0.10",
 		"nette/utils": "^3.0",
 		"nette/caching": "^3.0",
-		"latte/latte": "^2.5",
-		"symfony/asset": "^4.2 | ^5.0"
+		"latte/latte": "^2.5 || ^3.0",
+		"symfony/asset": "^5.0 || ^6.0"
 	},
 	"require-dev": {
-		"nette/tester": "^2.2",
+		"nette/tester": "^2.3.4",
 		"nette/application": "^3.0",
 		"friendsofphp/php-cs-fixer": "^2.15",
 		"68publishers/asset": "^2.0",
