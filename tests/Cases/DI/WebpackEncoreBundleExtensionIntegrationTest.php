@@ -2,59 +2,55 @@
 
 declare(strict_types=1);
 
-namespace SixtyEightPublishers\WebpackEncoreBundle\Tests\Cases\EntryPoint;
+namespace SixtyEightPublishers\WebpackEncoreBundle\Tests\Cases\DI;
 
-use Nette;
-use Tester;
-use SixtyEightPublishers;
+use Tester\Assert;
+use Tester\TestCase;
+use Nette\Caching\Cache;
+use SixtyEightPublishers\WebpackEncoreBundle\Tests\Helper\ContainerFactory;
+use SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookupProvider;
 
 require __DIR__ . '/../../bootstrap.php';
 
-class WebpackEncoreBundleExtensionIntegrationTest extends Tester\TestCase
+class WebpackEncoreBundleExtensionIntegrationTest extends TestCase
 {
-	/**
-	 * @return void
-	 */
 	public function testRegisteredEntryPointLookupProviderService(): void
 	{
-		$container = SixtyEightPublishers\WebpackEncoreBundle\Tests\Helper\ContainerFactory::createContainer(
+		$container = ContainerFactory::createContainer(
 			__METHOD__,
 			__DIR__ . '/../../files/encore.neon'
 		);
 
-		Tester\Assert::noError(static function () use ($container) {
+		Assert::noError(static function () use ($container) {
 			$container->getService('encore.entryPointLookupProvider');
 		});
 
-		/** @var \SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookupProvider $entryPointLookupProvider */
+		/** @var IEntryPointLookupProvider $entryPointLookupProvider */
 		$entryPointLookupProvider = $container->getService('encore.entryPointLookupProvider');
 
-		Tester\Assert::type(SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookupProvider::class, $entryPointLookupProvider);
+		Assert::type(IEntryPointLookupProvider::class, $entryPointLookupProvider);
 
-		Tester\Assert::noError(static function () use ($entryPointLookupProvider) {
+		Assert::noError(static function () use ($entryPointLookupProvider) {
 			$entryPointLookupProvider->getEntryPointLookup();
 			$entryPointLookupProvider->getEntryPointLookup('different_build');
 		});
 	}
 
-	/**
-	 * @return void
-	 */
 	public function testRegisteredCacheService(): void
 	{
-		$container = SixtyEightPublishers\WebpackEncoreBundle\Tests\Helper\ContainerFactory::createContainer(
+		$container = ContainerFactory::createContainer(
 			__METHOD__,
 			__DIR__ . '/../../files/encore_cache_enabled.neon'
 		);
 
-		Tester\Assert::noError(static function () use ($container) {
+		Assert::noError(static function () use ($container) {
 			$container->getService('encore.cache.cache');
 		});
 
-		/** @var \Nette\Caching\Cache $cache */
+		/** @var Cache $cache */
 		$cache = $container->getService('encore.cache.cache');
 
-		Tester\Assert::type(Nette\Caching\Cache::class, $cache);
+		Assert::type(Cache::class, $cache);
 	}
 }
 

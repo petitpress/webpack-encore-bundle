@@ -3,36 +3,37 @@
 $finder = PhpCsFixer\Finder::create()
 	->in(__DIR__ . '/src')
 	->in(__DIR__ . '/tests')
+	->exclude('temp')
 ;
 
-return PhpCsFixer\Config::create()
-	->setUsingCache(FALSE)
+return (new PhpCsFixer\Config())
+	->setUsingCache(false)
 	->setIndent("\t")
 	->setRules([
-		'@PSR2' => TRUE,
+		'@PSR2' => true,
 		'array_syntax' => ['syntax' => 'short'],
-		'trailing_comma_in_multiline_array' => true,
+		'trailing_comma_in_multiline' => true,
 		'constant_case' => [
 			'case' => 'upper',
 		],
-		'declare_strict_types' => TRUE,
-		'phpdoc_align' => TRUE,
-		'blank_line_after_opening_tag' => TRUE,
+		'declare_strict_types' => true,
+		'phpdoc_align' => true,
+		'blank_line_after_opening_tag' => true,
 		'blank_line_before_statement' => [
 			'statements' => ['break', 'continue', 'declare', 'return'],
 		],
-		'blank_line_after_namespace' => TRUE,
-		'single_blank_line_before_namespace' => TRUE,
+		'blank_line_after_namespace' => true,
+		'single_blank_line_before_namespace' => true,
 		'return_type_declaration' => [
 			'space_before' => 'none',
 		],
 		'ordered_imports' => [
 			'sort_algorithm' => 'length',
 		],
-		'no_unused_imports' => TRUE,
-		'single_line_after_imports' => TRUE,
-		'no_leading_import_slash' => TRUE,
+		'no_unused_imports' => true,
+		'single_line_after_imports' => true,
+		'no_leading_import_slash' => true,
 	])
-	->setRiskyAllowed(TRUE)
+	->setRiskyAllowed(true)
 	->setFinder($finder)
 ;

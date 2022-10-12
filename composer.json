@@ -9,30 +9,39 @@
 			"email": "tomasglawaty@icloud.com"
 		}
 	],
+	"repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/petitpress/asset",
+            "canonical": false
+        }
+    ],
 	"require": {
-		"php": "^7.2 || ^8.0",
+		"php": "^8.0",
 		"nette/di": "^3.0.10",
 		"nette/utils": "^3.0",
 		"nette/caching": "^3.0",
-		"latte/latte": "^2.5 || ^3.0",
+		"latte/latte": "^3.0",
 		"symfony/asset": "^5.0 || ^6.0"
 	},
 	"require-dev": {
 		"nette/tester": "^2.3.4",
 		"nette/application": "^3.0",
-		"friendsofphp/php-cs-fixer": "^2.15",
-		"68publishers/asset": "^2.0",
+		"friendsofphp/php-cs-fixer": "^3.4",
+		"68publishers/asset": "dev-supportPhp8",
 		"mockery/mockery": "^1.2"
 	},
 	"suggest": {
 		"68publishers/asset": "The recommended way to get Symfony Asset Component into your project."
 	},
 	"autoload": {
-		"classmap": ["src/"],
-		"files": []
+		"psr-4": {
+			"SixtyEightPublishers\\WebpackEncoreBundle\\": "src/"
+		}
 	},
 	"autoload-dev": {
-		"classmap": ["tests/"],
-		"files": []
+		"psr-4": {
+			"SixtyEightPublishers\\WebpackEncoreBundle\\Tests\\": "tests/"
+		}
 	}
 }

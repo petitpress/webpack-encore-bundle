@@ -4,48 +4,66 @@ declare(strict_types=1);
 
 namespace SixtyEightPublishers\WebpackEncoreBundle\DI;
 
-use Latte;
-use Nette;
-use Symfony;
+use Latte\Engine;
 use RuntimeException;
-use SixtyEightPublishers;
+use Nette\Caching\Cache;
+use Nette\Schema\Expect;
+use Nette\Schema\Schema;
+use Nette\Utils\Strings;
+use Nette\Caching\Storage;
+use Nette\DI\CompilerExtension;
+use Nette\DI\Definitions\Statement;
+use Nette\Utils\AssertionException;
+use Symfony\Component\Asset\Packages;
+use Nette\DI\Extensions\InjectExtension;
+use Nette\DI\Definitions\ServiceDefinition;
+use SixtyEightPublishers\WebpackEncoreBundle\Latte\TagRenderer;
+use SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\EntryPointLookup;
+use SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookup;
+use SixtyEightPublishers\WebpackEncoreBundle\Latte\WebpackEncoreLatteExtension;
+use SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\EntryPointLookupProvider;
+use SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookupProvider;
 
-final class WebpackEncoreBundleExtension extends Nette\DI\CompilerExtension
+final class WebpackEncoreBundleExtension extends CompilerExtension
 {
 	private const ENTRYPOINTS_FILE_NAME = 'entrypoints.json';
-
 	private const ENTRYPOINT_DEFAULT_NAME = '_default';
-
-	private const CROSSORIGIN_ALLOWED_VALUES = [NULL, 'anonymous', 'use-credentials'];
+	private const CROSSORIGIN_ALLOWED_VALUES = [null, 'anonymous', 'use-credentials'];
 
 	/**
 	 * {@inheritdoc}
 	 */
-	public function getConfigSchema(): Nette\Schema\Schema
+	public function getConfigSchema(): Schema
 	{
-		return Nette\Schema\Expect::structure([
-			'output_path' => Nette\Schema\Expect::string()->nullable(), # The path where Encore is building the assets - i.e. Encore.setOutputPath()
-			'builds' => Nette\Schema\Expect::array()->items('string')->assert(function (array $value): bool {
+		return Expect::structure([
+			'output_path' => Expect::string()->nullable(),
+			# The path where Encore is building the assets - i.e. Encore.setOutputPath()
+			'builds' => Expect::array()->items('string')->assert(function (array $value): bool {
 				if (isset($value[self::ENTRYPOINT_DEFAULT_NAME])) {
-					throw new Nette\Utils\AssertionException(sprintf('Key "%s" can\'t be used as build name.', self::ENTRYPOINT_DEFAULT_NAME));
+					throw new AssertionException(
+						sprintf('Key "%s" can\'t be used as build name.', self::ENTRYPOINT_DEFAULT_NAME)
+					);
 				}
 
-				return TRUE;
+				return true;
 			}),
-			'crossorigin' => Nette\Schema\Expect::string()->nullable()->assert(function (?string $value): bool {
-				if (!in_array($value, self::CROSSORIGIN_ALLOWED_VALUES, TRUE)) {
-					throw new Nette\Utils\AssertionException(sprintf('Value "%s" for setting "crossorigin" is not allowed', $value));
+			'crossorigin' => Expect::string()->nullable()->assert(function (?string $value): bool {
+				if (!in_array($value, self::CROSSORIGIN_ALLOWED_VALUES, true)) {
+					throw new AssertionException(
+						sprintf('Value "%s" for setting "crossorigin" is not allowed', $value)
+					);
 				}
 
-				return TRUE;
-			}), # crossorigin value when Encore.enableIntegrityHashes() is used, can be NULL (default), anonymous or use-credentials
-			'cache' => Nette\Schema\Expect::structure([
-				'enabled' => Nette\Schema\Expect::bool(FALSE),
-				'storage' => Nette\Schema\Expect::string('@' . Nette\Caching\IStorage::class)->dynamic(),
+				return true;
+			}),
+			# crossorigin value when Encore.enableIntegrityHashes() is used, can be null (default), anonymous or use-credentials
+			'cache' => Expect::structure([
+				'enabled' => Expect::bool(false),
+				'storage' => Expect::string('@' . Storage::class)->dynamic(),
 			]),
-			'latte' => Nette\Schema\Expect::structure([
-				'js_assets_macro_name' => Nette\Schema\Expect::string('encore_js'),
-				'css_assets_macro_name' => Nette\Schema\Expect::string('encore_css'),
+			'latte' => Expect::structure([
+				'js_assets_macro_name' => Expect::string('encore_js'),
+				'css_assets_macro_name' => Expect::string('encore_css'),
 			]),
 		]);
 	}
@@ -59,8 +77,12 @@ final class WebpackEncoreBundleExtension extends Nette\DI\CompilerExtension
 		$cache = $this->registerCache($this->getConfig()->cache->enabled, $this->getConfig()->cache->storage);
 		$lookups = [];
 
-		if (NULL !== $this->getConfig()->output_path) {
-			$lookups[] = $this->createEntryPointLookupStatement(self::ENTRYPOINT_DEFAULT_NAME, $this->getConfig()->output_path, $cache);
+		if (null !== $this->getConfig()->output_path) {
+			$lookups[] = $this->createEntryPointLookupStatement(
+				self::ENTRYPOINT_DEFAULT_NAME,
+				$this->getConfig()->output_path,
+				$cache
+			);
 		}
 
 		foreach ($this->getConfig()->builds as $name => $path) {
@@ -68,24 +90,57 @@ final class WebpackEncoreBundleExtension extends Nette\DI\CompilerExtension
 		}
 
 		$builder->addDefinition($this->prefix('entryPointLookupProvider'))
-			->setType(SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookupProvider::class)
-			->setFactory(SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\EntryPointLookupProvider::class, [
+			->setType(IEntryPointLookupProvider::class)
+			->setFactory(EntryPointLookupProvider::class, [
 				'lookups' => $lookups,
-				'defaultName' => NULL !== $this->getConfig()->output_path ? self::ENTRYPOINT_DEFAULT_NAME : NULL,
+				'defaultName' => null !== $this->getConfig()->output_path ? self::ENTRYPOINT_DEFAULT_NAME : null,
 			]);
 
 		$defaultAttributes = [];
 
-		if (NULL !== $this->getConfig()->crossorigin) {
+		if (null !== $this->getConfig()->crossorigin) {
 			$defaultAttributes['crossorigin'] = $this->getConfig()->crossorigin;
 		}
 
 		$builder->addDefinition($this->prefix('tagRenderer'))
-			->setType(SixtyEightPublishers\WebpackEncoreBundle\Latte\TagRenderer::class)
-			->setAutowired(FALSE)
+			->setType(TagRenderer::class)
+			->setAutowired(false)
 			->setArguments([
 				'defaultAttributes' => $defaultAttributes,
 			]);
+	}
+
+	private function registerCache(bool $enabled, mixed $storage): ?ServiceDefinition
+	{
+		if (false === $enabled) {
+			return null;
+		}
+
+		$builder = $this->getContainerBuilder();
+
+		if (!is_string($storage) || !Strings::startsWith($storage, '@')) {
+			$storage = $builder->addDefinition($this->prefix('cache.storage'))
+				->setType(Storage::class)
+				->setFactory($storage)
+				->addTag(InjectExtension::TAG_INJECT);
+		}
+
+		return $builder->addDefinition($this->prefix('cache.cache'))
+			->setType(Cache::class)
+			->setArguments([
+				'storage' => $storage,
+				'namespace' => str_replace('\\', '.', IEntryPointLookup::class),
+			])
+			->addTag(InjectExtension::TAG_INJECT);
+	}
+
+	private function createEntryPointLookupStatement(string $name, string $path, ?ServiceDefinition $cache): Statement
+	{
+		return new Statement(EntryPointLookup::class, [
+			'buildName' => $name,
+			'entryPointJsonPath' => $path . '/' . self::ENTRYPOINTS_FILE_NAME,
+			'cache' => $cache,
+		]);
 	}
 
 	/**
@@ -95,68 +150,30 @@ final class WebpackEncoreBundleExtension extends Nette\DI\CompilerExtension
 	{
 		$builder = $this->getContainerBuilder();
 
-		if (NULL === $builder->getByType(Symfony\Component\Asset\Packages::class, FALSE)) {
-			throw new RuntimeException('Missing service of type Symfony\Component\Asset\Packages that is required by this package. You can configure and register it manually or you can use package 68publishers/asset (recommended way).');
+		if (null === $builder->getByType(Packages::class)) {
+			throw new RuntimeException(
+				'Missing service of type Symfony\Component\Asset\Packages that is required by this package. You can configure and register it manually or you can use package 68publishers/asset (recommended way).'
+			);
 		}
 
-		$latteFactory = $builder->getDefinition($builder->getByType(Latte\Engine::class) ?? 'nette.latteFactory');
+		$latteFactory = $builder->getDefinition($builder->getByType(Engine::class) ?? 'nette.latteFactory');
 
 		$latteFactory->getResultDefinition()->addSetup('addProvider', [
 			'name' => 'webpackEncoreTagRenderer',
 			'value' => $this->prefix('@tagRenderer'),
 		]);
 
-		$latteFactory->getResultDefinition()->addSetup('?->onCompile[] = function ($engine) { ?::install(?, ?, $engine->getCompiler()); }', [
-			'@self',
-			new Nette\PhpGenerator\PhpLiteral(SixtyEightPublishers\WebpackEncoreBundle\Latte\WebpackEncoreMacros::class),
-			$this->getConfig()->latte->js_assets_macro_name,
-			$this->getConfig()->latte->css_assets_macro_name,
-		]);
-	}
-
-	/**
-	 * @param string                                      $name
-	 * @param string                                      $path
-	 * @param Nette\DI\Definitions\ServiceDefinition|NULL $cache
-	 *
-	 * @return Nette\DI\Definitions\Statement
-	 */
-	private function createEntryPointLookupStatement(string $name, string $path, ?Nette\DI\Definitions\ServiceDefinition $cache): Nette\DI\Definitions\Statement
-	{
-		return new Nette\DI\Definitions\Statement(SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\EntryPointLookup::class, [
-			'buildName' => $name,
-			'entryPointJsonPath' => $path . '/' . self::ENTRYPOINTS_FILE_NAME,
-			'cache' => $cache,
-		]);
-	}
-
-	/**
-	 * @param bool  $enabled
-	 * @param mixed $storage
-	 *
-	 * @return Nette\DI\Definitions\ServiceDefinition|NULL
-	 */
-	private function registerCache(bool $enabled, $storage): ?Nette\DI\Definitions\ServiceDefinition
-	{
-		if (FALSE === $enabled) {
-			return NULL;
-		}
-
-		$builder = $this->getContainerBuilder();
-
-		if (!is_string($storage) || !Nette\Utils\Strings::startsWith($storage, '@')) {
-			$storage = $builder->addDefinition($this->prefix('cache.storage'))
-				->setType(Nette\Caching\IStorage::class)
-				->setFactory($storage)
-				->addTag(Nette\DI\Extensions\InjectExtension::TAG_INJECT);
-		}
-
-		return $builder->addDefinition($this->prefix('cache.cache'))
-			->setType(Nette\Caching\Cache::class)
-			->setArguments([
-				'storage' => $storage,
-				'namespace' => str_replace('\\', '.', SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookup::class),
-			])
-			->addTag(Nette\DI\Extensions\InjectExtension::TAG_INJECT);
+		$latteFactory->getResultDefinition()->addSetup(
+			'addExtension',
+			[
+				new Statement(
+					WebpackEncoreLatteExtension::class,
+					[
+						'encoreCssNodeName' => $this->getConfig()->latte->css_assets_macro_name,
+						'encoreJsNodeName' => $this->getConfig()->latte->js_assets_macro_name,
+					]
+				),
+			]
+		);
 	}
 }

@@ -5,30 +5,23 @@ declare(strict_types=1);
 namespace SixtyEightPublishers\WebpackEncoreBundle\Latte;
 
 use Nette;
-use Symfony;
-use SixtyEightPublishers;
+use Throwable;
+use Nette\Utils\Html;
+use Symfony\Component\Asset\Packages;
+use SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IIntegrityDataProvider;
+use SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookupProvider;
 
 final class TagRenderer
 {
 	use Nette\SmartObject;
 
-	/** @var \SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookupProvider  */
-	private $entryPointLookupProvider;
+	private IEntryPointLookupProvider $entryPointLookupProvider;
+	private Packages $packages;
+	private array $defaultAttributes;
 
-	/** @var \Symfony\Component\Asset\Packages  */
-	private $packages;
-
-	/** @var array  */
-	private $defaultAttributes;
-
-	/**
-	 * @param \SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookupProvider $entryPointLookupProvider
-	 * @param \Symfony\Component\Asset\Packages                                              $packages
-	 * @param array                                                                          $defaultAttributes
-	 */
 	public function __construct(
-		SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookupProvider $entryPointLookupProvider,
-		Symfony\Component\Asset\Packages $packages,
+		IEntryPointLookupProvider $entryPointLookupProvider,
+		Packages $packages,
 		array $defaultAttributes = []
 	) {
 		$this->entryPointLookupProvider = $entryPointLookupProvider;
@@ -37,23 +30,19 @@ final class TagRenderer
 	}
 
 	/**
-	 * @param string      $entryName
-	 * @param string|NULL $packageName
-	 * @param string|NULL $buildName
-	 *
-	 * @return string
+	 * @throws Throwable
 	 */
-	public function renderJsTags(string $entryName, ?string $packageName = NULL, ?string $buildName = NULL): string
+	public function renderJsTags(string $entryName, ?string $packageName = null, ?string $buildName = NULL): string
 	{
 		$entryPointLookup = $this->entryPointLookupProvider->getEntryPointLookup($buildName);
-		$integrityHashes = ($entryPointLookup instanceof SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IIntegrityDataProvider) ? $entryPointLookup->getIntegrityData() : [];
-		$htmlTag = Nette\Utils\Html::el('script')->addAttributes($this->defaultAttributes);
+		$integrityHashes = ($entryPointLookup instanceof IIntegrityDataProvider) ? $entryPointLookup->getIntegrityData() : [];
+		$htmlTag = Html::el('script')->addAttributes($this->defaultAttributes);
 
 		foreach (($tags = $entryPointLookup->getJsFiles($entryName)) as $i => $file) {
 			$tags[$i] = (clone $htmlTag)
 				->addAttributes([
 					'src' => $this->packages->getUrl($file, $packageName),
-					'integrity' => $integrityHashes[$file] ?? NULL,
+					'integrity' => $integrityHashes[$file] ?? null,
 				])
 				->render();
 		}
@@ -62,18 +51,14 @@ final class TagRenderer
 	}
 
 	/**
-	 * @param string      $entryName
-	 * @param string|NULL $packageName
-	 * @param string|NULL $buildName
-	 *
-	 * @return string
+	 * @throws Throwable
 	 */
-	public function renderCssTags(string $entryName, ?string $packageName = NULL, ?string $buildName = NULL): string
+	public function renderCssTags(string $entryName, ?string $packageName = null, ?string $buildName = NULL): string
 	{
 		$entryPointLookup = $this->entryPointLookupProvider->getEntryPointLookup($buildName);
-		$integrityHashes = ($entryPointLookup instanceof SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IIntegrityDataProvider) ? $entryPointLookup->getIntegrityData() : [];
+		$integrityHashes = ($entryPointLookup instanceof IIntegrityDataProvider) ? $entryPointLookup->getIntegrityData() : [];
 
-		$htmlTag = Nette\Utils\Html::el('link')
+		$htmlTag = Html::el('link')
 			->addAttributes($this->defaultAttributes)
 			->setAttribute('rel', 'stylesheet');
 
@@ -81,7 +66,7 @@ final class TagRenderer
 			$tags[$i] = (clone $htmlTag)
 				->addAttributes([
 					'href' => $this->packages->getUrl($file, $packageName),
-					'integrity' => $integrityHashes[$file] ?? NULL,
+					'integrity' => $integrityHashes[$file] ?? null,
 				])
 				->render();
 		}

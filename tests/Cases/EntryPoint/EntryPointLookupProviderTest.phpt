@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace SixtyEightPublishers\WebpackEncoreBundle\Tests\Cases\EntryPoint;
 
+use SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\EntryPointLookupProvider;
+use SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookup;
+use SixtyEightPublishers\WebpackEncoreBundle\Exception\EntryPointNotFoundException;
 use Tester;
 use Mockery;
 use SixtyEightPublishers;
+use Tester\TestCase;
 
 require __DIR__ . '/../../bootstrap.php';
 
-final class EntryPointLookupProviderTest extends Tester\TestCase
+final class EntryPointLookupProviderTest extends TestCase
 {
 	/**
 	 * {@inheritdoc}
@@ -22,64 +26,52 @@ final class EntryPointLookupProviderTest extends Tester\TestCase
 		Mockery::close();
 	}
 
-	/**
-	 * @return void
-	 */
 	public function testExceptionOnMissingBuildEntry(): void
 	{
-		$provider = new SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\EntryPointLookupProvider([]);
+		$provider = new EntryPointLookupProvider([]);
 
 		Tester\Assert::exception(
 			static function () use ($provider) {
 				$provider->getEntryPointLookup('foo');
 			},
-			SixtyEightPublishers\WebpackEncoreBundle\Exception\EntryPointNotFoundException::class,
+			EntryPointNotFoundException::class,
 			'The build "foo" is not configured.'
 		);
 	}
 
-	/**
-	 * @return void
-	 */
 	public function testExceptionOnMissingDefaultBuildEntry(): void
 	{
-		$provider = new SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\EntryPointLookupProvider([]);
+		$provider = new EntryPointLookupProvider([]);
 
 		Tester\Assert::exception(
 			static function () use ($provider) {
 				$provider->getEntryPointLookup();
 			},
-			SixtyEightPublishers\WebpackEncoreBundle\Exception\EntryPointNotFoundException::class,
+			EntryPointNotFoundException::class,
 			'There is no default build configured: please pass an argument to getEntryPointLookup().'
 		);
 	}
 
-	/**
-	 * @return void
-	 */
 	public function testBuildIsReturned(): void
 	{
-		$lookup = Mockery::mock(SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookup::class);
+		$lookup = Mockery::mock(IEntryPointLookup::class);
 
 		$lookup->shouldReceive('getBuildName')
 			->andReturn('foo');
 
-		$provider = new SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\EntryPointLookupProvider([ $lookup ]);
+		$provider = new EntryPointLookupProvider([ $lookup ]);
 
 		Tester\Assert::same($lookup, $provider->getEntryPointLookup('foo'));
 	}
 
-	/**
-	 * @return void
-	 */
 	public function testDefaultBuildIsReturned(): void
 	{
-		$lookup = Mockery::mock(SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookup::class);
+		$lookup = Mockery::mock(IEntryPointLookup::class);
 
 		$lookup->shouldReceive('getBuildName')
 			->andReturn('_default');
 
-		$provider = new SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\EntryPointLookupProvider(
+		$provider = new EntryPointLookupProvider(
 			[ $lookup ],
 			'_default'
 		);

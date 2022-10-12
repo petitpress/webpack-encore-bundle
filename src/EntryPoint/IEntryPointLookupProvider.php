@@ -6,11 +6,5 @@ namespace SixtyEightPublishers\WebpackEncoreBundle\EntryPoint;
 
 interface IEntryPointLookupProvider
 {
-	/**
-	 * @param string|NULL $buildName
-	 *
-	 * @return \SixtyEightPublishers\WebpackEncoreBundle\EntryPoint\IEntryPointLookup
-	 * @throws \SixtyEightPublishers\WebpackEncoreBundle\Exception\EntryPointNotFoundException
-	 */
-	public function getEntryPointLookup(?string $buildName = NULL): IEntryPointLookup;
+	public function getEntryPointLookup(?string $buildName = null): IEntryPointLookup;
 }

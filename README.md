@@ -47,7 +47,7 @@ encore:
     # if you want to cache entrypoints.json
     cache:
         enabled: yes # default is 'no'
-        storage: @myStroage # default is @Nette\Caching\IStorage
+        storage: @myStroage # default is @Nette\Caching\Storage
     
     # if you want to change macro's names
     latte:
@@ -76,7 +76,7 @@ encore:
 Before committing any changes, don't forget to run
 
 ```bash
-vendor/bin/php-cs-fixer fix --config=.php_cs.dist -v --dry-run
+vendor/bin/php-cs-fixer fix -v --dry-run
 ```
 
 and

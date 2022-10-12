@@ -2,17 +2,20 @@
 
 declare(strict_types=1);
 
-namespace SixtyEightPublishers\Asset\Tests\Cases\Latte;
+namespace SixtyEightPublishers\WebpackEncoreBundle\Tests\Cases\Latte;
 
+use Latte\Engine;
+use Nette\Bridges\ApplicationLatte\ILatteFactory;
+use SixtyEightPublishers\WebpackEncoreBundle\Tests\Helper\ContainerFactory;
 use Tester;
 use SixtyEightPublishers;
+use Tester\TestCase;
 
 require __DIR__ . '/../../bootstrap.php';
 
-final class WebpackEncoreMacrosIntegrationTest extends Tester\TestCase
+final class WebpackEncoreMacrosIntegrationTest extends TestCase
 {
-	/** @var NULL|\Latte\Engine */
-	private $latte;
+	private ?Engine $latte;
 
 	/**
 	 * {@inheritdoc}
@@ -21,12 +24,12 @@ final class WebpackEncoreMacrosIntegrationTest extends Tester\TestCase
 	{
 		parent::setUp();
 
-		$container = SixtyEightPublishers\WebpackEncoreBundle\Tests\Helper\ContainerFactory::createContainer(
+		$container = ContainerFactory::createContainer(
 			__METHOD__,
 			__DIR__ . '/../../files/encore.neon'
 		);
 
-		/** @var \Nette\Bridges\ApplicationLatte\ILatteFactory $latteFactory */
+		/** @var ILatteFactory $latteFactory */
 		$latteFactory = $container->getService('latte.latteFactory');
 
 		$this->latte = $latteFactory->create();
